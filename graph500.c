@@ -79,10 +79,10 @@ main (int argc, char **argv)
     the following if () {} else {} with a statement pointing IJ
     to wherever the edge list is mapped into the simulator's memory.
   */
+  nedge = desired_nedge;
   if (!dumpname) {
     if (VERBOSE) fprintf (stderr, "Generating edge list...");
     if (use_RMAT) {
-      nedge = desired_nedge;
       IJ = xmalloc_large_ext (nedge * sizeof (*IJ));
       TIME(generation_time, rmat_edgelist (IJ, nedge, SCALE, A, B, C));
     } else {
@@ -96,7 +96,8 @@ main (int argc, char **argv)
       perror ("Cannot open input graph file");
       return EXIT_FAILURE;
     }
-    sz = nedge * sizeof (*IJ);
+    sz = nedge * sizeof (*IJ) / 2;
+    IJ = xmalloc_large_ext (nedge * sizeof (*IJ));
     if (sz != read (fd, IJ, sz)) {
       perror ("Error reading input graph file");
       return EXIT_FAILURE;
@@ -155,14 +156,16 @@ run_bfs (void)
     /* Sample from {0, ..., nvtx_scale-1} without replacement, but
        only from vertices with degree > 0. */
     m = 0;
-    t = 0;
-    for (k = 0; k < nvtx_scale && m < NBFS && t < nvtx_connected; ++k) {
-      if (has_adj[k]) {
-	double R = mrg_get_double_orig (prng_state);
-	if ((nvtx_connected - t)*R > NBFS - m) ++t;
-	else bfs_root[m++] = t++;
+    for (k = 0; k < nvtx_scale && m < NBFS; ++k) {
+      unsigned long challenge = (unsigned long)(mrg_get_double_orig(prng_state) * (double)(nvtx_scale-1));
+
+      if (has_adj[challenge]) {
+        size_t i=0;
+        for (; i<m; i++) if (bfs_root[i] == challenge) break; // check for duplicates
+        if (i == m) bfs_root[m++] = challenge; // if not duplicate, add to list
       }
     }
+	  
     if (t >= nvtx_connected && m < NBFS) {
       if (m > 0) {
 	fprintf (stderr, "Cannot find %d sample roots of non-self degree > 0, using %d.\n",
