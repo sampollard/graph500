@@ -31,6 +31,10 @@
 #include "generator/graph_generator.h"
 #include "generator/make_graph.h"
 
+#ifdef POWER_PROFILING
+#include "power_rapl.h"
+#endif
+
 static int64_t nvtx_scale;
 
 static int64_t bfs_root[NBFS_max];
@@ -66,6 +70,10 @@ main (int argc, char **argv)
     get_options (argc, argv);
 
   nvtx_scale = ((int64_t)1)<<SCALE;
+#ifdef POWER_PROFILING
+  power_rapl_t ps;
+  power_rapl_init(&ps);
+#endif
 
   init_random ();
 
@@ -105,7 +113,14 @@ main (int argc, char **argv)
     close (fd);
   }
 
+#ifdef POWER_PROFILING
+    power_rapl_start(&ps);
+#endif
   run_bfs ();
+#ifdef POWER_PROFILING
+    power_rapl_end(&ps);
+    power_rapl_print(&ps);
+#endif
 
   xfree_large (IJ);
 

@@ -3,10 +3,11 @@
 # See COPYING for license.
 BUILD_OPENMP = No
 BUILD_XMT = No
+BUILD_RAPL = No # To use RAPL you must have root priviledge. Only with OpenMP.
 include make.inc
 
 GRAPH500_SOURCES=graph500.c options.c rmat.c kronecker.c verify.c prng.c \
-	xalloc.c timer.c 
+	xalloc.c timer.c
 
 MAKE_EDGELIST_SOURCES=make-edgelist.c options.c rmat.c kronecker.c prng.c \
 	xalloc.c timer.c 
@@ -15,6 +16,12 @@ BIN=seq-list/seq-list seq-csr/seq-csr make-edgelist graph5002el
 
 ifeq ($(BUILD_OPENMP), Yes)
 BIN += omp-csr/omp-csr
+ifeq ($(BUILD_RAPL), Yes)
+PAPI_HOME=/usr/local/packages/papi/git
+CFLAGS += -I$(PAPI_HOME)/include -DPOWER_PROFILING=1
+LDLIBS += -L$(PAPI_HOME)/lib -Wl,-rpath,$(PAPI_HOME)/lib -lpapi -lm
+GRAPH500_SOURCES += power_rapl.c
+endif
 endif
 
 ifeq ($(BUILD_MPI), Yes)
