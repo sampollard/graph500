@@ -73,6 +73,7 @@ main (int argc, char **argv)
 #ifdef POWER_PROFILING
   power_rapl_t ps;
   power_rapl_init(&ps);
+  printf("Monitoring power with RAPL on Graph500 BFS\n");
 #endif
 
   init_random ();

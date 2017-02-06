@@ -3,7 +3,8 @@
 # See COPYING for license.
 BUILD_OPENMP = No
 BUILD_XMT = No
-BUILD_RAPL = No # To use RAPL you must have root priviledge. Only with OpenMP.
+# To use RAPL you must have root priviledge. Only with OpenMP.
+BUILD_RAPL = Yes
 include make.inc
 
 GRAPH500_SOURCES=graph500.c options.c rmat.c kronecker.c verify.c prng.c \
@@ -77,5 +78,5 @@ mpi/graph500_mpi_simple mpi/graph500_mpi_one_sided mpi/graph500_mpi_replicated:
 .PHONY:	clean
 clean:
 	rm -f generator/generator_test_seq generator/generator_test_omp \
-		$(BIN)
+		$(BIN) power_rapl.o
 	-$(MAKE) -C mpi clean
