@@ -33,6 +33,7 @@
 
 #ifdef POWER_PROFILING
 #include "power_rapl.h"
+power_rapl_t ps;
 #endif
 
 static int64_t nvtx_scale;
@@ -71,7 +72,6 @@ main (int argc, char **argv)
 
   nvtx_scale = ((int64_t)1)<<SCALE;
 #ifdef POWER_PROFILING
-  power_rapl_t ps;
   power_rapl_init(&ps);
   printf("Monitoring power with RAPL on Graph500 BFS\n");
 #endif
@@ -114,14 +114,7 @@ main (int argc, char **argv)
     close (fd);
   }
 
-#ifdef POWER_PROFILING
-    power_rapl_start(&ps);
-#endif
   run_bfs ();
-#ifdef POWER_PROFILING
-    power_rapl_end(&ps);
-    power_rapl_print(&ps);
-#endif
 
   xfree_large (IJ);
 
@@ -209,6 +202,9 @@ run_bfs (void)
     close (fd);
   }
 
+#ifdef POWER_PROFILING
+    power_rapl_start(&ps);
+#endif
   for (m = 0; m < NBFS; ++m) {
     int64_t *bfs_tree, max_bfsvtx;
 
@@ -238,6 +234,10 @@ run_bfs (void)
 
     xfree_large (bfs_tree);
   }
+#ifdef POWER_PROFILING
+    power_rapl_end(&ps);
+    power_rapl_print(&ps);
+#endif
 
   destroy_graph ();
 }
