@@ -71,11 +71,6 @@ main (int argc, char **argv)
     get_options (argc, argv);
 
   nvtx_scale = ((int64_t)1)<<SCALE;
-#ifdef POWER_PROFILING
-  power_rapl_init(&ps);
-  printf("Monitoring power with RAPL on Graph500 BFS\n");
-#endif
-
   init_random ();
 
   desired_nedge = nvtx_scale * edgefactor;
@@ -202,11 +197,13 @@ run_bfs (void)
     close (fd);
   }
 
-#ifdef POWER_PROFILING
-    power_rapl_start(&ps);
-#endif
   for (m = 0; m < NBFS; ++m) {
     int64_t *bfs_tree, max_bfsvtx;
+#ifdef POWER_PROFILING
+    power_rapl_init(&ps);
+    printf("Monitoring power with RAPL on Graph500 BFS\n");
+    power_rapl_start(&ps);
+#endif
 
     /* Re-allocate. Some systems may randomize the addres... */
     bfs_tree = xmalloc_large (nvtx_scale * sizeof (*bfs_tree));
@@ -226,18 +223,19 @@ run_bfs (void)
       bfs_nedge[m] = verify_bfs_tree (bfs_tree, max_bfsvtx, bfs_root[m], IJ, nedge);
       if (VERBOSE) fprintf (stderr, "done\n");
       if (bfs_nedge[m] < 0) {
-	fprintf (stderr, "bfs %d from %" PRId64 " failed verification (%" PRId64 ")\n",
-		 m, bfs_root[m], bfs_nedge[m]);
-	abort ();
+        fprintf (stderr, "bfs %d from %" PRId64 " failed verification (%" PRId64 ")\n",
+            m, bfs_root[m], bfs_nedge[m]);
+        abort ();
       }
     }
 
     xfree_large (bfs_tree);
-  }
 #ifdef POWER_PROFILING
     power_rapl_end(&ps);
+    printf ("bfs_time[%d]: %20.17e\n", m, bfs_time[m]);
     power_rapl_print(&ps);
 #endif
+  }
 
   destroy_graph ();
 }
@@ -365,10 +363,12 @@ output_results (const int64_t SCALE, int64_t nvtx_scale, int64_t edgefactor,
   printf ("construction_time: %20.17e\n", construction_time);
   printf ("nbfs: %d\n", NBFS);
 
+#ifndef POWER_PROFILING
   // Print out each time so the user can make her own statistics.
   for (k = 0; k < NBFS; k++) {
     printf ("bfs_time[%d]: %20.17e\n", k, bfs_time[k]);
   }
+#endif
 
   memcpy (tm, bfs_time, NBFS*sizeof(tm[0]));
   statistics (stats, tm, NBFS);
